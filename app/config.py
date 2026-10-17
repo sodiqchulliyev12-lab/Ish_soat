@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -20,7 +21,8 @@ def _load_env(path: Path) -> None:
 _load_env(BASE_DIR / ".env")
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
-ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "").replace(" ", "").split(",") if x.isdigit()}
+# Any digits count, so stray quotes or spaces in the value do not silently drop an admin
+ADMIN_IDS = {int(x) for x in re.findall(r"\d+", os.getenv("ADMIN_IDS", ""))}
 TZ = ZoneInfo(os.getenv("TIMEZONE", "Asia/Tashkent"))
 # On Railway, keep the database on the attached volume so it survives redeploys
 _DATA_DIR = os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or str(BASE_DIR)

@@ -8,7 +8,7 @@ from aiogram.enums import ParseMode
 from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault
 
 from app import admin, db, scheduler, worker
-from app.config import ADMIN_IDS, BOT_TOKEN
+from app.config import ADMIN_IDS, BOT_TOKEN, DB_PATH
 
 
 async def main() -> None:
@@ -29,7 +29,7 @@ async def main() -> None:
             logging.warning("admin %s commands not set: %s", admin_id, e)
     sched = scheduler.setup(bot)
     sched.start()
-    logging.info("Ishchilar boti ishga tushdi")
+    logging.info("Ishchilar boti ishga tushdi. Adminlar: %s. Baza: %s", sorted(ADMIN_IDS) or "yo'q", DB_PATH)
     try:
         await dp.start_polling(bot)
     finally:
