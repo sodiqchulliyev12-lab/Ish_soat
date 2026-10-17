@@ -22,7 +22,9 @@ _load_env(BASE_DIR / ".env")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "").replace(" ", "").split(",") if x.isdigit()}
 TZ = ZoneInfo(os.getenv("TIMEZONE", "Asia/Tashkent"))
-DB_PATH = os.getenv("DB_PATH", str(BASE_DIR / "ishchilar.db"))
+# On Railway, keep the database on the attached volume so it survives redeploys
+_DATA_DIR = os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or str(BASE_DIR)
+DB_PATH = os.getenv("DB_PATH", os.path.join(_DATA_DIR, "ishchilar.db"))
 CURRENCY = os.getenv("CURRENCY", "so'm")
 COMPANY = os.getenv("COMPANY_NAME", "Kompaniya")
 

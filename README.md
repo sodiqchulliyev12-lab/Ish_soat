@@ -39,7 +39,18 @@ Ishchilarga bot havolasini yuboring. Ular `/start` → **📱 Telefon raqamni yu
 - `/maosh ID oylik 4000000`: maosh hisoblanishi uchun (ID: 👥 Ishchilar)
 - Hamma buyruqlar: `/yordam`
 
-## Muhim
+## Railway'ga joylash (doimiy ishlashi uchun)
+1. https://railway.com ga kiring → **Login with GitHub**.
+2. **New Project** → **Deploy from GitHub repo** → `Ish_soat` ni tanlang (so'rasa, Railway'ga shu omborga ruxsat bering).
+3. Xizmat (service) ustiga bosing → **Variables** → qo'shing:
+   - `BOT_TOKEN` = @BotFather bergan token
+   - `ADMIN_IDS` = Telegram ID ingiz (bilmasangiz, avval bo'sh qoldiring, botga /start bosing, keyin yozing)
+4. Bazaning saqlanib qolishi uchun **Volume** qo'shing: loyiha oynasida o'ng tugma (yoki Ctrl+K) → **Volume** → xizmatga ulang, mount path: `/data`. Bot bazani o'zi shu yerga yozadi.
+5. **Deploy** ni bosing. **Deployments → View logs** da `Ishchilar boti ishga tushdi` chiqsa, bot ishlayapti.
+
+Eslatma: botdan faqat **bitta** nusxa ishlashi kerak (Replicas = 1). Kompyuteringizda ham ishga tushirsangiz, ikkalasi to'qnashadi. Railway pullik: sinov kreditidan keyin Hobby rejasi oyiga taxminan $5.
+
+
 - Bot faqat dastur ishlab turganda ishlaydi. Ishchilar har kuni foydalangani uchun uni serverga (VPS) qo'yish kerak.
 - Ma'lumotlar `ishchilar.db` faylida. Uni vaqti-vaqti bilan nusxalab qo'ying.
 - Eski versiyadan yangilasangiz, `ishchilar.db` saqlanadi: yangi ustunlar o'zi qo'shiladi, `/sozlama joy` bilan kiritilgan joy «Asosiy» filialga aylanadi.
