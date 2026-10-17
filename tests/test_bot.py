@@ -78,6 +78,9 @@ async def main():
     await feed(ADMIN, text="/start")
     out = await feed(ALI, text="/start")
     assert "telefon" in out[0]
+    # typing the number instead of tapping the button gets a hint, not silence
+    out = await feed(ALI, text="+998901112233")
+    assert "tugmasini" in out[0]
     # someone else's contact is rejected
     out = await feed(ALI, contact=Contact(phone_number="998900000000", first_name="X", user_id=999))
     assert "o'zingizning" in out[0]

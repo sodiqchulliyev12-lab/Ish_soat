@@ -340,3 +340,17 @@ async def my_month(message: Message):
     start, end = parse_month(None)
     stats = month_stats(start, end, only=w["tg_id"])
     await message.answer(worker_month_text(stats[0], start), reply_markup=menu_for(w["tg_id"]))
+
+
+@router.message(F.text)
+async def fallback(message: Message):
+    """Typed text nobody handled: point the person at the right button instead of staying silent."""
+    user_id = message.from_user.id
+    w = db.get_worker(user_id)
+    if is_admin(user_id) or (w and w["status"] == "active"):
+        await message.answer("Pastdagi tugmalardan foydalaning. Menyu: /start", reply_markup=menu_for(user_id))
+    elif w:
+        await message.answer(not_active_text(user_id))
+    else:
+        await message.answer("Raqamni yozish shart emas. Pastdagi <b>📱 Telefon raqamni yuborish</b> tugmasini "
+                             "bosing, raqam o'zi yuboriladi.", reply_markup=contact_kb())
