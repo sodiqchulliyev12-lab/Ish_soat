@@ -255,18 +255,18 @@ def month_excel(stats: list[WorkerMonth], start: date) -> bytes:
     rows = []
     for wm in sorted(stats, key=lambda x: x.worker["name"]):
         w = wm.worker
-        rows.append([w["name"], w["phone"], wm.branch, wm.sched_label, wm.workdays, wm.days, len(wm.absent_days),
+        rows.append([w["name"], w["position"] or "", w["phone"], wm.branch, wm.sched_label, wm.workdays, wm.days, len(wm.absent_days),
                      wm.paid_leave, wm.unpaid_leave, wm.late_count, wm.late_min, wm.early_min,
                      round(wm.worked / 60, 2), w["rate_type"] or "", w["rate"] or "",
                      round(wm.pay) if wm.pay is not None else ""])
-    _sheet(ws, ["Ishchi", "Telefon", "Filial", "Grafik", "Ish kunlari", "Kelgan kunlar", "Kelmagan kunlar",
+    _sheet(ws, ["Ishchi", "Lavozim", "Telefon", "Filial", "Grafik", "Ish kunlari", "Kelgan kunlar", "Kelmagan kunlar",
                 "Ta'til/kasal (haq to'lanadi)", "Ruxsat (o'z hisobidan)", "Kechikishlar soni", "Kechikish (daq)",
                 "Erta ketish (daq)", "Jami soat", "Maosh turi", "Stavka", "Hisoblangan maosh"],
-           rows, [24, 16, 14, 16, 9, 9, 9, 12, 12, 10, 10, 10, 9, 10, 12, 15])
+           rows, [24, 16, 16, 14, 16, 9, 9, 9, 12, 12, 10, 10, 10, 9, 10, 12, 15])
     if rows:
         total_row = len(rows) + 2
         ws.cell(row=total_row, column=1, value="JAMI").font = Font(bold=True)
-        for col in (6, 7, 8, 9, 10, 11, 12, 13, 16):
+        for col in (7, 8, 9, 10, 11, 12, 13, 14, 17):
             letter = get_column_letter(col)
             ws.cell(row=total_row, column=col, value=f"=SUM({letter}2:{letter}{total_row - 1})").font = Font(bold=True)
 

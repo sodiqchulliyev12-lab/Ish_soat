@@ -8,6 +8,7 @@ BTN_CANCEL = "⬅️ Bekor qilish"
 # user_id -> what the next location/photo from that user is for:
 #   {"action": "in"|"out", "step": "loc"|"photo", ...}  check-in/out in progress
 #   {"action": "branch_new", "name": str} / {"action": "branch_move", "id": int}  admin setting a branch location
+#   {"action": "position", "tg_id": int}  admin approved a worker and now types their position
 PENDING: dict[int, dict] = {}
 
 

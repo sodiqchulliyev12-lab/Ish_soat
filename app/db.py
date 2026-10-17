@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS leaves (
 
 # Columns added after the first release; init() adds them to older databases.
 NEW_COLUMNS = {
-    "workers": {"branch_id": "INTEGER", "start": "TEXT", "end": "TEXT", "weekend": "TEXT"},
+    "workers": {"branch_id": "INTEGER", "start": "TEXT", "end": "TEXT", "weekend": "TEXT", "position": "TEXT"},
     "shifts": {"branch_id": "INTEGER", "in_photo": "TEXT", "out_photo": "TEXT"},
 }
 
@@ -119,7 +119,7 @@ def add_worker(tg_id: int, name: str, phone: str, created_at: str) -> None:
 
 
 def set_worker(tg_id: int, **fields) -> bool:
-    allowed = {"name", "phone", "status", "rate_type", "rate", "branch_id", "start", "end", "weekend"}
+    allowed = {"name", "phone", "status", "rate_type", "rate", "branch_id", "start", "end", "weekend", "position"}
     if not fields or not set(fields) <= allowed:
         raise ValueError(fields)
     sql = ", ".join(f'"{k}" = ?' for k in fields)

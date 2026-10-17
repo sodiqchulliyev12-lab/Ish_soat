@@ -40,7 +40,7 @@ HELP = """<b>👑 Admin buyruqlari</b>
 <code>/grafik ID 20:00 08:00</code>: shaxsiy grafik (tungi smena ham)
 <code>/grafik ID 09:00 18:00 shanba,yakshanba</code>: dam olish kunlari bilan
 <code>/grafik ID umumiy</code>: umumiy grafikka qaytarish
-<code>/ism ID Yangi Ism</code> · <code>/bloklash ID</code> · <code>/tiklash ID</code>
+<code>/ism ID Yangi Ism</code> · <code>/lavozim ID Sotuvchi</code> · <code>/bloklash ID</code> · <code>/tiklash ID</code>
 <code>/ishchi ID</code>: bir ishchining shu oyi (<code>/ishchi ID 2026-09</code>)
 
 <b>Ta'til va ruxsat</b>
@@ -124,7 +124,7 @@ async def workers_cmd(message: Message):
             continue
         lines += ["", f"{title} ({len(rows)})"]
         for w in rows:
-            extra = []
+            extra = [w["position"]] if w["position"] else []
             if w["rate"]:
                 extra.append(f"{w['rate_type']} {money(w['rate'])}")
             if w["start"] or w["weekend"] is not None:
@@ -151,10 +151,12 @@ async def approve(call: CallbackQuery):
         await call.answer("Bu ariza allaqachon ko'rib chiqilgan.")
         return
     if action == "ok":
-        db.set_worker(w["tg_id"], status="active")
-        await call.message.edit_text(call.message.html_text + "\n\n✅ Qabul qilindi")
-        await call.bot.send_message(w["tg_id"], "🎉 Siz ishchi sifatida tasdiqlandingiz! Kelganda ✅ Keldim, "
-                                                "ketayotganda 🏁 Ketdim ni bosing.", reply_markup=worker_kb())
+        # the worker starts only after the admin names their position
+        PENDING[call.from_user.id] = {"action": "position", "tg_id": w["tg_id"]}
+        await call.message.edit_text(call.message.html_text + "\n\n✍️ Lavozim kutilmoqda")
+        await call.bot.send_message(call.from_user.id, f"✍️ <b>{w['name']}</b> qaysi lavozimda ishlaydi? Yozib "
+                                                       "yuboring, masalan: <code>Sotuvchi</code>.\n"
+                                                       "Lavozimsiz qabul qilish: <code>-</code>")
     else:
         db.set_worker(w["tg_id"], status="blocked")
         await call.message.edit_text(call.message.html_text + "\n\n❌ Rad etildi")
@@ -197,6 +199,24 @@ async def set_schedule(message: Message, command: CommandObject):
     w = db.get_worker(w["tg_id"])
     sched = schedule(w, db.get_settings())
     await message.answer(f"🕘 {w['name']}: {sched.label()}, dam olish: {weekend_label(','.join(map(str, sched.weekend)))}")
+
+
+async def activate(bot, w, position: str) -> None:
+    db.set_worker(w["tg_id"], status="active", position=position or None)
+    role = f" <b>{position}</b> lavozimida" if position else ""
+    await bot.send_message(w["tg_id"], f"🎉 Siz{role} ishchi sifatida tasdiqlandingiz! Kelganda ✅ Keldim, "
+                                       "ketayotganda 🏁 Ketdim ni bosing.", reply_markup=worker_kb())
+
+
+@router.message(Command("lavozim"))
+async def set_position(message: Message, command: CommandObject):
+    parts = (command.args or "").split(maxsplit=1)
+    w = worker_id(parts[0]) if parts else None
+    if not w or len(parts) < 2:
+        await message.answer("Masalan: <code>/lavozim 123456789 Katta sotuvchi</code>")
+        return
+    db.set_worker(w["tg_id"], position=parts[1].strip())
+    await message.answer(f"💼 {w['name']}: {parts[1].strip()}")
 
 
 @router.message(Command("ism"))
@@ -498,3 +518,17 @@ async def settings(message: Message, command: CommandObject | None = None):
     else:
         error = "Tushunmadim. Namunalar: /yordam"
     await message.answer(error or "✅ Saqlandi.\n\n" + settings_text())
+
+
+@router.message(F.text & ~F.text.startswith("/"), lambda m: PENDING.get(m.from_user.id, {}).get("action") == "position")
+async def position_answer(message: Message):
+    """The admin's reply to "which position?" right after tapping ✅ Qabul."""
+    state = PENDING.pop(message.from_user.id)
+    w = db.get_worker(state["tg_id"])
+    if not w or w["status"] != "pending":
+        await message.answer("Bu ariza allaqachon ko'rib chiqilgan.")
+        return
+    position = "" if message.text.strip() == "-" else message.text.strip()[:60]
+    await activate(message.bot, w, position)
+    await message.answer(f"✅ {w['name']} qabul qilindi" + (f": {position}" if position else "") +
+                         f"\nKeyinroq o'zgartirish: <code>/lavozim {w['tg_id']} ...</code>")

@@ -94,9 +94,16 @@ async def main():
     # workers cannot use admin commands
     out = await feed(ALI, text="/hisobot")
     assert not any("Oylik hisobot" in t for t in out)
-    await tap(ADMIN, f"w:ok:{ALI}")
+    out = await tap(ADMIN, f"w:ok:{ALI}")
+    assert any("lavozim" in t for t in out) and db.get_worker(ALI)["status"] == "pending"
+    out = await feed(ADMIN, text="Sotuvchi")
+    assert db.get_worker(ALI)["status"] == "active" and db.get_worker(ALI)["position"] == "Sotuvchi"
+    assert any("Sotuvchi</b> lavozimida" in t for t in out)
     await tap(ADMIN, f"w:ok:{VALI}")
-    assert db.get_worker(ALI)["status"] == "active"
+    await feed(ADMIN, text="-")
+    assert db.get_worker(VALI)["status"] == "active" and db.get_worker(VALI)["position"] is None
+    out = await feed(ADMIN, text=f"/lavozim {VALI} Omborchi")
+    assert db.get_worker(VALI)["position"] == "Omborchi"
     # backdate both workers so last month's days count
     with db.db() as c:
         c.execute("UPDATE workers SET created_at = '2026-09-01 08:00'")
@@ -225,6 +232,7 @@ async def main():
     SOBIR = 103
     await feed(SOBIR, contact=Contact(phone_number="998905554433", first_name="Sobir", user_id=SOBIR))
     await tap(ADMIN, f"w:ok:{SOBIR}")
+    await feed(ADMIN, text="Qorovul")
     out = await feed(ADMIN, text=f"/grafik {SOBIR} 20:00 08:00")
     assert "tungi" in out[0]
     base = utils.today()
