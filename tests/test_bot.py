@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.base import BaseSession
-from aiogram.types import CallbackQuery, Chat, Contact, Location, Message, PhotoSize, Update, User
+from aiogram.types import CallbackQuery, Chat, Contact, Location, Message, PhotoSize, Update, User, VideoNote
 
 from app import admin, db, report, scheduler, utils, worker
 
@@ -25,10 +25,12 @@ sent = []  # (chat_id, text or document, reply_markup)
 class FakeSession(BaseSession):
     async def make_request(self, bot, method, timeout=None):
         name = type(method).__name__
+        if name == "SendVideoNote":
+            sent.append((method.chat_id, f"[video] {method.video_note}", None))
         if name in ("SendMessage", "SendDocument", "EditMessageText", "SendPhoto"):
             body = getattr(method, "text", None) or getattr(method, "document", None) or f"[photo] {getattr(method, 'caption', '')}"
             sent.append((getattr(method, "chat_id", None), body, getattr(method, "reply_markup", None)))
-        if name in ("SendMessage", "SendDocument", "SendPhoto"):
+        if name in ("SendMessage", "SendDocument", "SendPhoto", "SendVideoNote"):
             return Message(message_id=1, date=datetime.now(), chat=Chat(id=1, type="private"), text="x")
         return True
 
@@ -266,6 +268,18 @@ async def main():
     assert db.get_shift(ALI, utils.today())["in_photo"] == "selfie1"
     out = await feed(ADMIN, text=admin.BTN_TODAY)
     assert "[Yunusobod]" in out[0]
+
+    # round video mode: a photo is refused, the circle goes to the admin with place, distance and map link
+    await feed(ADMIN, text="/sozlama selfi video")
+    await feed(ALI, text=worker.BTN_OUT)
+    out = await feed(ALI, location=Location(latitude=41.3651, longitude=69.2871))
+    assert "dumaloq video" in out[0]
+    out = await feed(ALI, photo=[PhotoSize(file_id="selfie2", file_unique_id="u2", width=10, height=10)])
+    assert "dumaloq video kerak" in out[0]
+    out = await feed(ALI, video_note=VideoNote(file_id="circle1", file_unique_id="c1", length=240, duration=5))
+    assert "Xayr" in out[0] and "[video] circle1" in out
+    assert any("Yunusobod" in t and " m " in t and "maps.google.com" in t for t in out), out
+    assert db.get_shift(ALI, utils.today())["out_photo"] == "v:circle1"
 
     # block
     await feed(ADMIN, text=f"/bloklash {VALI}")

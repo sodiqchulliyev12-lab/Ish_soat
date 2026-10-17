@@ -36,6 +36,7 @@ Ishchilarga bot havolasini yuboring. Ular `/start` → **📱 Telefon raqamni yu
 - `/bayram 01.01 Yangi yil`: bayram kunlari
 - `/grafik ID 20:00 08:00`: boshqacha yoki tungi grafikdagi ishchi uchun
 - `/sozlama selfi on`: kelish/ketishda selfi so'rash
+- `/sozlama selfi video`: kelish/ketishda dumaloq video so'rash (joylashuv filial radiusida tekshiriladi, video va xarita havolasi adminga boradi)
 - `/maosh ID oylik 4000000`: maosh hisoblanishi uchun (ID: 👥 Ishchilar)
 - Hamma buyruqlar: `/yordam`
 

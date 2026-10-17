@@ -68,7 +68,8 @@ Filial bo'lmasa joylashuv so'ralmaydi.
 <b>Sozlamalar</b>
 /sozlama · <code>/sozlama ish 09:00 18:00</code> · <code>/sozlama kechikish 10</code>
 <code>/sozlama dam yakshanba</code> · <code>/sozlama xulosa 19:00</code>
-<code>/sozlama xabar off</code> · <code>/sozlama selfi on</code>"""
+<code>/sozlama xabar off</code> · <code>/sozlama selfi on</code>
+<code>/sozlama selfi video</code>: kelish/ketishda dumaloq video so'raladi"""
 
 
 def worker_id(arg: str):
@@ -448,6 +449,9 @@ async def bind(message: Message, command: CommandObject):
 
 # ---------- settings ----------
 
+SELFIE_LABELS = {"1": "ha, rasm", "video": "ha, dumaloq video", "0": "yo‘q"}
+
+
 def settings_text() -> str:
     s = db.get_settings()
     branches = db.branches()
@@ -457,7 +461,7 @@ def settings_text() -> str:
             f"⏰ Kechikishga ruxsat: {s['grace']} daq\n"
             f"🛌 Dam olish: {weekend_label(s['weekend'])}\n"
             f"📍 Ish joyi: {place}\n"
-            f"🤳 Selfi talab qilinadi: {'ha' if s['selfie'] == '1' else 'yo‘q'}\n"
+            f"🤳 Selfi talab qilinadi: {SELFIE_LABELS.get(s['selfie'], 'yo‘q')}\n"
             f"📨 Kunlik xulosa: {s['summary']}\n"
             f"🔔 Har bir kelish/ketish haqida xabar: {'yoqilgan' if s['notify'] == '1' else 'o‘chirilgan'}\n\n"
             "O'zgartirish: /yordam dagi Sozlamalar bo'limi")
@@ -487,8 +491,10 @@ async def settings(message: Message, command: CommandObject | None = None):
         error = "Ish joyi endi filiallar orqali belgilanadi: <code>/filial qosh Asosiy</code>"
     elif key == "xulosa" and len(args) == 1 and (t := parse_time(args[0])):
         db.set_setting("summary", t)
-    elif key in ("xabar", "selfi") and len(args) == 1 and args[0] in ("on", "off"):
-        db.set_setting("notify" if key == "xabar" else "selfie", "1" if args[0] == "on" else "0")
+    elif key == "selfi" and len(args) == 1 and args[0] in ("on", "off", "video"):
+        db.set_setting("selfie", {"on": "1", "off": "0", "video": "video"}[args[0]])
+    elif key == "xabar" and len(args) == 1 and args[0] in ("on", "off"):
+        db.set_setting("notify", "1" if args[0] == "on" else "0")
     else:
         error = "Tushunmadim. Namunalar: /yordam"
     await message.answer(error or "✅ Saqlandi.\n\n" + settings_text())

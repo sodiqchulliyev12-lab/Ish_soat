@@ -21,7 +21,10 @@ log = logging.getLogger(__name__)
 async def notify_admins(bot: Bot, text: str, photo: str | None = None, **kwargs) -> None:
     for admin_id in ADMIN_IDS:
         try:
-            if photo:
+            if photo and photo.startswith("v:"):  # round video: no caption possible, text follows it
+                await bot.send_video_note(admin_id, photo[2:])
+                await bot.send_message(admin_id, text, **kwargs)
+            elif photo:
                 await bot.send_photo(admin_id, photo, caption=text, **kwargs)
             else:
                 await bot.send_message(admin_id, text, **kwargs)
@@ -128,10 +131,12 @@ async def next_step(message: Message, w, state: dict):
                                  reply_markup=location_kb())
             return
         state["step"] = "loc_done"
-    if state["step"] == "loc_done" and settings["selfie"] == "1":
+    if state["step"] == "loc_done" and settings["selfie"] in ("1", "video"):
         state["step"] = "photo"
         PENDING[w["tg_id"]] = state
-        await message.answer("🤳 Endi selfi yuboring (📎 → Kamera).", reply_markup=cancel_kb())
+        ask = ("🎥 Endi dumaloq video yuboring: yozish maydonidagi 🎤 tugmasini bir marta bosib 📷 ga o'tkazing, "
+               "keyin bosib turib yozing." if settings["selfie"] == "video" else "🤳 Endi selfi yuboring (📎 → Kamera).")
+        await message.answer(ask, reply_markup=cancel_kb())
         return
     PENDING.pop(w["tg_id"], None)
     await finish(message, w, state)
@@ -212,23 +217,28 @@ async def on_location(message: Message):
         await notify_admins(message.bot, f"⚠️ {w['name']} «{branch['name']}» dan {int(dist)} m uzoqdan "
                                          f"{'Keldim' if state['action'] == 'in' else 'Ketdim'} bosishga urindi.")
         return
-    state.update(step="loc_done", lat=loc.latitude, lon=loc.longitude, branch_id=branch["id"])
+    state.update(step="loc_done", lat=loc.latitude, lon=loc.longitude, branch_id=branch["id"], dist=int(dist))
     await next_step(message, w, state)
 
 
-@router.message(F.photo)
+@router.message(F.photo | F.video_note)
 async def on_photo(message: Message):
     state = PENDING.get(message.from_user.id)
     if not state or state.get("step") != "photo":
         return
+    want_video = db.get_settings()["selfie"] == "video"
     if message.forward_origin:
-        await message.answer("Selfini kamera orqali hozir oling, uzatilgan rasm qabul qilinmaydi.")
+        await message.answer("Hozir yozib yuboring, uzatilgan rasm yoki video qabul qilinmaydi.")
+        return
+    if want_video and not message.video_note:
+        await message.answer("Rasm emas, dumaloq video kerak (🎤 tugmasini 📷 ga o'tkazib yozing).")
         return
     w = active_worker(message)
     if not w:
         PENDING.pop(message.from_user.id, None)
         return
-    state.update(step="done", photo=message.photo[-1].file_id)
+    media = "v:" + message.video_note.file_id if message.video_note else message.photo[-1].file_id
+    state.update(step="done", photo=media)
     PENDING.pop(w["tg_id"], None)
     await finish(message, w, state)
 
@@ -253,7 +263,10 @@ async def finish(message: Message, w, state: dict):
     kb = menu_for(w["tg_id"])
     lat, lon, photo = state.get("lat"), state.get("lon"), state.get("photo")
     branch = db.get_branch(state.get("branch_id"))
-    where = f" ({branch['name']})" if branch and len(db.branches()) > 1 else ""
+    where = ""
+    if branch:  # where exactly they pressed the button, with a map link for the admin
+        where = (f"\n📍 {branch['name']}, {state.get('dist', 0)} m "
+                 f"(<a href=\"https://maps.google.com/?q={lat},{lon}\">xaritada</a>)")
     if state["action"] == "in":
         day = shift_day(w, settings, current)
         db.check_in(w["tg_id"], day, stamp(current), lat, lon, state.get("branch_id"), photo)
@@ -261,7 +274,7 @@ async def finish(message: Message, w, state: dict):
         late = f"\n⏰ Kechikish: {fmt_minutes(info.late)}" if info.late else ""
         await message.answer(f"✅ Xush kelibsiz! Kelgan vaqt: <b>{current:%H:%M}</b>{late}", reply_markup=kb)
         if settings["notify"] == "1":
-            await notify_admins(message.bot, f"✅ {w['name']} keldi: {current:%H:%M}{where}{late}", photo=photo)
+            await notify_admins(message.bot, f"✅ {w['name']} keldi: {current:%H:%M}{late}{where}", photo=photo)
         return
     shift = db.latest_open_shift(w["tg_id"])
     db.check_out(shift["id"], stamp(current), lat, lon, photo=photo)
@@ -270,8 +283,8 @@ async def finish(message: Message, w, state: dict):
     await message.answer(f"🏁 Xayr! Ketgan vaqt: <b>{current:%H:%M}</b>\nIshladingiz: "
                          f"<b>{fmt_minutes(info.worked)}</b>{early}", reply_markup=kb)
     if settings["notify"] == "1":
-        await notify_admins(message.bot, f"🏁 {w['name']} ketdi: {current:%H:%M}{where} "
-                                         f"({fmt_minutes(info.worked)}){early}", photo=photo)
+        await notify_admins(message.bot, f"🏁 {w['name']} ketdi: {current:%H:%M} "
+                                         f"({fmt_minutes(info.worked)}){early}{where}", photo=photo)
 
 
 # ---------- leave ----------

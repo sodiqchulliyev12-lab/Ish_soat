@@ -68,5 +68,6 @@ Admin `.env` dagi `ADMIN_IDS` orqali belgilanadi (Telegram ID; botga /start boss
    - 🏢 **Filiallar:** har biriga alohida joylashuv va radius. Ishchini bitta filialga bog'lash yoki istalgan filialda belgilashga ruxsat berish.
    - 🌙 **Shaxsiy grafik va tungi smena:** `/grafik ID 20:00 08:00`. Tungi smena ertasi kuni yopiladi, kechikish va erta ketish shaxsiy grafik bo'yicha hisoblanadi.
    - 🤳 **Selfi:** `/sozlama selfi on`. Kelish/ketishda selfi so'raladi, rasm adminga boradi.
+   - 🎥 **Dumaloq video (17.10):** `/sozlama selfi video`. Ishchi joylashuv yuboradi (filial radiusi tekshiriladi), keyin dumaloq video yozadi. Adminga video, filial nomi, masofa va xarita havolasi boradi.
    - Unutilgan "Ketdim" endi har bir ishchining smena tugashidan 6 soat keyin avtomatik yopiladi.
 3. **Keyingi:** serverga (VPS) qo'yish va bazani har kuni zaxiralash, ishchi ichki kodi (QR) bilan belgilash, Google Sheets ga avtomatik yuborish.
